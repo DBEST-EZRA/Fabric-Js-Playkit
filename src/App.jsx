@@ -5,7 +5,7 @@ import "./App.css";
 function App() {
   const canvasRef = useRef(null);
   const fabricCanvas = useRef(null);
-  const tshirtImageRef = useRef(null); // store T-shirt image object
+  const tshirtImageRef = useRef(null);
 
   useEffect(() => {
     // Initialize fabric canvas
@@ -16,7 +16,7 @@ function App() {
     // Load default T-shirt
     loadTshirt("tshirt1.png");
 
-    // Cleanup
+    // Cleanup on unmount
     return () => {
       fabricCanvas.current.dispose();
     };
@@ -37,7 +37,7 @@ function App() {
       }
 
       tshirtImageRef.current = img;
-      fabricCanvas.current.insertAt(img, 0); // always insert at the bottom
+      fabricCanvas.current.insertAt(img, 0);
       fabricCanvas.current.renderAll();
     });
   }, []);
@@ -53,31 +53,39 @@ function App() {
     const reader = new FileReader();
     reader.onload = (f) => {
       fabric.Image.fromURL(f.target.result, (img) => {
+        const canvasWidth = fabricCanvas.current.width;
+        const canvasHeight = fabricCanvas.current.height;
+
+        const maxLogoWidth = canvasWidth * 0.4;
+        const maxLogoHeight = canvasHeight * 0.4;
+
+        const scaleRatio = Math.min(
+          maxLogoWidth / img.width,
+          maxLogoHeight / img.height
+        );
+
         img.set({
-          left: fabricCanvas.current.width / 2,
-          top: fabricCanvas.current.height / 2,
+          left: canvasWidth / 2,
+          top: canvasHeight / 2,
           originX: "center",
           originY: "center",
-          scaleX: 0.4,
-          scaleY: 0.4,
-        });
-
-        img.setControlsVisibility({
-          mt: true, // middle top
-          mb: true, // middle bottom
-          ml: true, // middle left
-          mr: true, // middle right
-          tl: true, // top left
-          tr: true, // top right
-          bl: true, // bottom left
-          br: true, // bottom right
-          mtr: true, // rotation
-        });
-
-        img.set({
+          scaleX: scaleRatio,
+          scaleY: scaleRatio,
           hasBorders: true,
           hasControls: true,
           selectable: true,
+        });
+
+        img.setControlsVisibility({
+          mt: true,
+          mb: true,
+          ml: true,
+          mr: true,
+          tl: true,
+          tr: true,
+          bl: true,
+          br: true,
+          mtr: true,
         });
 
         fabricCanvas.current.add(img);
