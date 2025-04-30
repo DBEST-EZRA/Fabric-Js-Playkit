@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { fabric } from "fabric";
 import "./App.css";
 
@@ -6,19 +6,30 @@ function App() {
   const canvasRef = useRef(null);
   const fabricCanvas = useRef(null);
   const tshirtImageRef = useRef(null);
+  const [textColor, setTextColor] = useState("#000000");
+  const [fontFamily, setFontFamily] = useState("Arial");
 
   useEffect(() => {
-    // Initialize fabric canvas
     fabricCanvas.current = new fabric.Canvas(canvasRef.current, {
       preserveObjectStacking: true,
       backgroundColor: "#fff",
     });
-    // Load default T-shirt
     loadTshirt("tshirt1.png");
 
-    // Cleanup on unmount
+    const handleKeyDown = (e) => {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const activeObject = fabricCanvas.current.getActiveObject();
+        if (activeObject && activeObject !== tshirtImageRef.current) {
+          fabricCanvas.current.remove(activeObject);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       fabricCanvas.current.dispose();
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -31,7 +42,6 @@ function App() {
       img.scaleToWidth(fabricCanvas.current.width);
       img.scaleToHeight(fabricCanvas.current.height);
 
-      // Remove previous T-shirt image
       if (tshirtImageRef.current) {
         fabricCanvas.current.remove(tshirtImageRef.current);
       }
@@ -76,23 +86,29 @@ function App() {
           selectable: true,
         });
 
-        img.setControlsVisibility({
-          mt: true,
-          mb: true,
-          ml: true,
-          mr: true,
-          tl: true,
-          tr: true,
-          bl: true,
-          br: true,
-          mtr: true,
-        });
-
         fabricCanvas.current.add(img);
         fabricCanvas.current.setActiveObject(img);
       });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleAddText = () => {
+    const canvasWidth = fabricCanvas.current.width;
+    const canvasHeight = fabricCanvas.current.height;
+    const text = new fabric.Textbox("Your Text", {
+      left: canvasWidth / 2,
+      top: canvasHeight / 2,
+      originX: "center",
+      originY: "center",
+      fill: textColor,
+      fontFamily: fontFamily,
+      fontSize: 24,
+      editable: true,
+    });
+
+    fabricCanvas.current.add(text);
+    fabricCanvas.current.setActiveObject(text);
   };
 
   const handleSave = () => {
@@ -132,9 +148,40 @@ function App() {
           <input type="file" accept="image/*" onChange={handleLogoUpload} />
         </label>
 
+        <label style={{ marginLeft: "20px" }}>
+          Text Color:
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => setTextColor(e.target.value)}
+          />
+        </label>
+
+        <label style={{ marginLeft: "20px" }}>
+          Font:
+          <select
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+          >
+            <option value="Arial">Arial</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Verdana">Verdana</option>
+          </select>
+        </label>
+
+        <button onClick={handleAddText} style={{ marginLeft: "20px" }}>
+          Add Text
+        </button>
+
         <button onClick={handleSave} style={{ marginLeft: "20px" }}>
           Save Design
         </button>
+
+        <p style={{ marginTop: "10px", fontStyle: "italic" }}>
+          Tip: Select an object and press <strong>Delete</strong> to remove it.
+        </p>
       </div>
     </div>
   );
